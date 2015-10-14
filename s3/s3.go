@@ -34,6 +34,15 @@ func (s3 *S3) Object(bucket, key string) *Object {
 	return o
 }
 
+// Bucket creates a new s3 bucket object
+func (s3 *S3) Bucket(bucket string) *Bucket {
+	b := &Bucket{
+		srv:        s3.srv,
+		bucketName: bucket,
+	}
+	return b
+}
+
 // Object is a S3 object
 type Object struct {
 	srv        *s3client.S3
@@ -65,6 +74,9 @@ type Object struct {
 	VersionID               string
 	WebsiteRedirectLocation string
 }
+
+// Objects is a slice of S3 Object
+type Objects []*Object
 
 // BucketName returns the name of the bucket where the object resides
 func (o *Object) BucketName() string {
@@ -169,4 +181,34 @@ func (o *Object) waitUntilNotExists() error {
 		time.Sleep(5 * time.Second)
 	}
 	return fmt.Errorf("timeout")
+}
+
+// Bucket type represents a S3 bucket
+type Bucket struct {
+	srv        *s3client.S3
+	bucketName string
+}
+
+// List the objects in an S3 bucket
+func (b *Bucket) List() (Objects, error) {
+	var objects Objects
+
+	params := &s3client.ListObjectsInput{
+		Bucket: aws.String(b.bucketName),
+	}
+	resp, err := b.srv.ListObjects(params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, object := range resp.Contents {
+		objects = append(objects, &Object{
+			srv:        b.srv,
+			bucketName: b.bucketName,
+			key:        *object.Key,
+		})
+	}
+
+	return objects, nil
 }
