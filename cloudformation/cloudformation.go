@@ -167,7 +167,8 @@ func (s *Stack) reload() error {
 	return s.load()
 }
 
-func (s *Stack) update(options ...UpdateOption) error {
+// Update the stack
+func (s *Stack) Update(options ...UpdateOption) error {
 	params := &cfn.UpdateStackInput{
 		Capabilities:     s.Capabilities,
 		NotificationARNs: s.NotificationARNs,
