@@ -21,6 +21,51 @@ func New(config *aws.Config) *CloudFormation {
 	return c
 }
 
+// List stacks
+func (c *CloudFormation) List() (stacks Stacks, err error) {
+	return c.listStacks(stacks, nil)
+}
+
+func (c *CloudFormation) listStacks(stacks Stacks, nextToken *string) (Stacks, error) {
+	props := &cfn.DescribeStacksInput{
+		NextToken: nextToken,
+		// StackStatusFilter: []*string{
+		// 	aws.String(cfn.StackStatusCreateInProgress),
+		// 	aws.String(cfn.StackStatusCreateFailed),
+		// 	aws.String(cfn.StackStatusCreateComplete),
+		// 	aws.String(cfn.StackStatusRollbackInProgress),
+		// 	aws.String(cfn.StackStatusRollbackFailed),
+		// 	aws.String(cfn.StackStatusRollbackComplete),
+		// 	aws.String(cfn.StackStatusDeleteInProgress),
+		// 	aws.String(cfn.StackStatusDeleteFailed),
+		// 	aws.String(cfn.StackStatusUpdateInProgress),
+		// 	aws.String(cfn.StackStatusUpdateCompleteCleanupInProgress),
+		// 	aws.String(cfn.StackStatusUpdateComplete),
+		// 	aws.String(cfn.StackStatusUpdateRollbackInProgress),
+		// 	aws.String(cfn.StackStatusUpdateRollbackFailed),
+		// 	aws.String(cfn.StackStatusUpdateRollbackCompleteCleanupInProgress),
+		// 	aws.String(cfn.StackStatusUpdateRollbackComplete),
+		// },
+	}
+	resp, err := c.srv.DescribeStacks(props)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, stack := range resp.Stacks {
+		stacks = append(stacks, &Stack{srv: c.srv, Stack: stack})
+	}
+
+	if resp.NextToken != nil {
+		stacks, err = c.listStacks(stacks, resp.NextToken)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return stacks, nil
+}
+
 // CreateStack creates a new stack
 func (c *CloudFormation) CreateStack(input *cfn.CreateStackInput) (*Stack, error) {
 	resp, err := c.srv.CreateStack(input)
@@ -54,6 +99,9 @@ type Stack struct {
 	srv *cfn.CloudFormation
 	*cfn.Stack
 }
+
+// Stacks is an slice of Stack
+type Stacks []*Stack
 
 func (s *Stack) cancelUpdate() error {
 	_, err := s.srv.CancelUpdateStack(&cfn.CancelUpdateStackInput{StackName: s.StackId})
