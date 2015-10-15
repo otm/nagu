@@ -167,6 +167,17 @@ func (s *Stack) reload() error {
 	return s.load()
 }
 
+// UpdateParameters updates the stacks parameters with the supplied ones
+func (s *Stack) UpdateParameters(newParams []cfn.Parameter) {
+	for i := 0; i < len(newParams); i++ {
+		for j := 0; j < len(s.Parameters); j++ {
+			if *newParams[i].ParameterKey == *s.Parameters[j].ParameterKey {
+				s.Parameters[j].ParameterValue = newParams[i].ParameterValue
+			}
+		}
+	}
+}
+
 // Update the stack
 func (s *Stack) Update(options ...UpdateOption) error {
 	params := &cfn.UpdateStackInput{
