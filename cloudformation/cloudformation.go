@@ -6,12 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
-//	"code.google.com/p/rog-go/exp/deepcopy"
-)
-
-import (
 	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
-	"github.com/aws/aws-sdk-go/aws/awsutil"
 )
 
 // CloudFormation is the service resource
