@@ -1,3 +1,5 @@
+// A fork of awsutil.copy with better checks for non-readable and non-writeable fields
+
 package cloudformation
 
 import (
@@ -29,6 +31,16 @@ func CopyOf(src interface{}) (dst interface{}) {
 	return
 }
 
+func isReadableReader(src reflect.Value) bool {
+	if !(src.CanInterface()) {
+		return false
+	}
+	if _, ok := src.Interface().(io.Reader); ok {
+		return true
+	}
+	return false
+}
+
 // rcopy performs a recursive copy of values from the source to destination.
 //
 // root is used to skip certain aspects of the copy which are not valid
@@ -40,7 +52,7 @@ func rcopy(dst, src reflect.Value, root bool) {
 
 	switch src.Kind() {
 	case reflect.Ptr:
-		if _, ok := src.Interface().(io.Reader); ok {
+		if isReadableReader(src) {
 			if dst.Kind() == reflect.Ptr && dst.Elem().CanSet() {
 				dst.Elem().Set(src)
 			} else if dst.CanSet() {
@@ -58,15 +70,19 @@ func rcopy(dst, src reflect.Value, root bool) {
 		}
 	case reflect.Struct:
 		if !root {
-			dst.Set(reflect.New(src.Type()).Elem())
+			if dst.CanSet() {
+				dst.Set(reflect.New(src.Type()).Elem())
+			}
 		}
 
-		t := dst.Type()
-		for i := 0; i < t.NumField(); i++ {
-			name := t.Field(i).Name
-			srcval := src.FieldByName(name)
-			if srcval.IsValid() {
-				rcopy(dst.FieldByName(name), srcval, false)
+		if dst.CanSet() {
+			t := dst.Type()
+			for i := 0; i < t.NumField(); i++ {
+				name := t.Field(i).Name
+				srcval := src.FieldByName(name)
+				if srcval.IsValid() {
+					rcopy(dst.FieldByName(name), srcval, false)
+				}
 			}
 		}
 	case reflect.Slice:
@@ -96,7 +112,7 @@ func rcopy(dst, src reflect.Value, root bool) {
 		// Assign the value if possible. If its not assignable, the value would
 		// need to be converted and the impact of that may be unexpected, or is
 		// not compatible with the dst type.
-		if src.Type().AssignableTo(dst.Type()) {
+		if src.Type().AssignableTo(dst.Type()) && dst.CanSet() {
 			dst.Set(src)
 		}
 	}

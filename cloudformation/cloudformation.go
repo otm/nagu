@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awsutil"
 	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
 )
 
@@ -106,22 +105,21 @@ type Stacks []*Stack
 // Clone returns a copy of stack
 func (s *Stack) Clone() *Stack {
 	//return deepcopy.Copy(s);
-	copyOfUnderlying := awsutil.CopyOf(s.Stack).(*cfn.Stack);
+	copyOfUnderlying := CopyOf(s.Stack).(*cfn.Stack)
 	copy := Stack{
-		srv: s.srv,
+		srv:   s.srv,
 		Stack: copyOfUnderlying,
-	};
-	return &copy;
-}
-
-func (ss * Stacks) Clone() *Stacks {
-	copy := make(Stacks, len(*ss), len(*ss));
-	for i, stack := range *ss {
-		copy[i] = stack.Clone();
 	}
-	return &copy;
+	return &copy
 }
 
+func (ss *Stacks) Clone() *Stacks {
+	copy := make(Stacks, len(*ss), len(*ss))
+	for i, stack := range *ss {
+		copy[i] = stack.Clone()
+	}
+	return &copy
+}
 
 func (s *Stack) cancelUpdate() error {
 	_, err := s.srv.CancelUpdateStack(&cfn.CancelUpdateStackInput{StackName: s.StackId})
@@ -200,7 +198,7 @@ func (s *Stack) UpdateParameters(newParams []cfn.Parameter) error {
 		}
 
 		if isNewKey {
-			paramCopy := awsutil.CopyOf(&newParams[i])
+			paramCopy := CopyOf(&newParams[i])
 
 			if paramCopy, ok := paramCopy.(*cfn.Parameter); ok {
 				s.Parameters = append(s.Parameters, paramCopy)
