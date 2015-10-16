@@ -103,6 +103,48 @@ type Stack struct {
 // Stacks is an slice of Stack
 type Stacks []*Stack
 
+// Clone returns a copy of stack
+func (s *Stack) Clone() *Stack {
+	s2 := &Stack{}
+	*s2.CreationTime = *s.CreationTime
+	*s2.StackStatus = *s.StackStatus
+	*s2.StackName = *s.StackName
+	for _, param := range s.Parameters {
+		s2.Parameters = append(s2.Parameters, &cfn.Parameter{
+			ParameterKey:     aws.String(*param.ParameterKey),
+			ParameterValue:   aws.String(*param.ParameterValue),
+			UsePreviousValue: aws.Bool(*param.UsePreviousValue),
+		})
+	}
+	*s2.LastUpdatedTime = *s.LastUpdatedTime
+	for _, na := range s.NotificationARNs {
+		s2.NotificationARNs = append(s2.NotificationARNs, aws.String(*na))
+	}
+	for _, o := range s.Outputs {
+		s2.Outputs = append(s2.Outputs, &cfn.Output{
+			Description: aws.String(*o.Description),
+			OutputKey:   aws.String(*o.OutputKey),
+			OutputValue: aws.String(*o.OutputValue),
+		})
+	}
+	*s2.DisableRollback = *s.DisableRollback
+	*s2.StackId = *s.StackId
+	*s2.Description = *s.Description
+	for _, c := range s.Capabilities {
+		s2.Capabilities = append(s2.Capabilities, aws.String(*c))
+	}
+	*s2.StackStatusReason = *s.StackStatusReason
+	for _, t := range s.Tags {
+		s2.Tags = append(s2.Tags, &cfn.Tag{
+			Key:   aws.String(*t.Value),
+			Value: aws.String(*t.Value),
+		})
+	}
+	*s2.TimeoutInMinutes = *s.TimeoutInMinutes
+
+	return s2
+}
+
 func (s *Stack) cancelUpdate() error {
 	_, err := s.srv.CancelUpdateStack(&cfn.CancelUpdateStackInput{StackName: s.StackId})
 
