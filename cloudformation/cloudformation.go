@@ -7,7 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 )
 
-import cfn "github.com/aws/aws-sdk-go/service/cloudformation"
+import (
+	cfn "github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/aws/awsutil"
+)
 
 // CloudFormation is the service resource
 type CloudFormation struct {
@@ -210,14 +213,40 @@ func (s *Stack) reload() error {
 }
 
 // UpdateParameters updates the stacks parameters with the supplied ones
-func (s *Stack) UpdateParameters(newParams []cfn.Parameter) {
+func (s *Stack) UpdateParameters(newParams []cfn.Parameter) error {
 	for i := 0; i < len(newParams); i++ {
+		isNewKey := true
 		for j := 0; j < len(s.Parameters); j++ {
 			if *newParams[i].ParameterKey == *s.Parameters[j].ParameterKey {
 				s.Parameters[j].ParameterValue = newParams[i].ParameterValue
+				isNewKey = false
+				continue
+			}
+		}
+
+		if isNewKey {
+			paramCopy := awsutil.CopyOf(&newParams[i])
+
+			if paramCopy, ok := paramCopy.(*cfn.Parameter); ok {
+				s.Parameters = append(s.Parameters, paramCopy)
+			} else {
+				return fmt.Errorf("Could not update parameter: %v", newParams[i].ParameterKey)
 			}
 		}
 	}
+
+	return nil
+}
+
+// GetParameters returns the parameter which has the supplied parameter key
+func (s *Stack) GetParameter(key string) *cfn.Parameter {
+	for i := 0; i < len(s.Parameters); i++ {
+		if *s.Parameters[i].ParameterKey == key {
+			return s.Parameters[i]
+		}
+	}
+
+	return nil
 }
 
 // Update the stack
